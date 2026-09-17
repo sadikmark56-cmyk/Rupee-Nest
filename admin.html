@@ -168,7 +168,95 @@ const email = prompt("Admin email:");
 const pass = prompt("Admin password:");
 
 let allUsers = [];
+let allWithdrawals = [];
 
+async function loadWithdrawals() {
+
+  withdrawalsStatus.textContent = "⏳ Loading withdrawals...";
+  withdrawalsList.innerHTML = "";
+
+  try {
+
+    const snapshot =
+      await getDocs(collection(db, "withdrawals"));
+
+    allWithdrawals = [];
+
+    snapshot.forEach((withdrawalDoc) => {
+      allWithdrawals.push({
+        id: withdrawalDoc.id,
+        ...withdrawalDoc.data()
+      });
+    });
+
+    withdrawalsStatus.textContent =
+      "✅ Total Withdrawals: " + allWithdrawals.length;
+
+    displayWithdrawals(allWithdrawals);
+
+  } catch (error) {
+
+    withdrawalsStatus.textContent =
+      "❌ Withdrawals load failed: " + error.message;
+  }
+}
+
+function displayWithdrawals(withdrawals) {
+
+  withdrawalsList.innerHTML = "";
+
+  if (withdrawals.length === 0) {
+
+    withdrawalsList.innerHTML =
+      "<p class='muted'>No withdrawal requests found.</p>";
+
+    return;
+  }
+
+  withdrawals.forEach((withdrawal) => {
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const status =
+      withdrawal.status || "pending";
+
+    const amount =
+      Number(withdrawal.amount || 0);
+
+    const method =
+      withdrawal.method || "Not specified";
+
+    const userId =
+      withdrawal.userId || "Unknown";
+
+    card.innerHTML = `
+      <h3>💸 Withdrawal Request</h3>
+
+      <p>
+        <b>Amount:</b> ₹${amount.toFixed(2)}
+      </p>
+
+      <p>
+        <b>User ID:</b> ${escapeHtml(userId)}
+      </p>
+
+      <p>
+        <b>Method:</b> ${escapeHtml(method)}
+      </p>
+
+      <p>
+        <b>Status:</b> ${escapeHtml(status)}
+      </p>
+    `;
+
+    withdrawalsList.appendChild(card);
+  });
+}
+
+document
+  .getElementById("refreshWithdrawals")
+  .addEventListener("click", loadWithdrawals);
 
 /* ================= MAIN ================= */
 

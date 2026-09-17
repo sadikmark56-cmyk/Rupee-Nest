@@ -199,7 +199,86 @@ const pass = prompt("Admin password:");
 let allUsers = [];
 let allWithdrawals = [];
 
+/* ================= DASHBOARD ================= */
 
+async function loadDashboard() {
+  try {
+    const usersSnapshot = await getDocs(
+      collection(db, "users")
+    );
+
+    const withdrawalsSnapshot = await getDocs(
+      collection(db, "withdrawals")
+    );
+
+    let totalBalance = 0;
+    let totalReferrals = 0;
+
+    usersSnapshot.forEach((userDoc) => {
+      const user = userDoc.data();
+
+      totalBalance += Number(user.balance || 0);
+      totalReferrals += Number(user.referrals || 0);
+    });
+
+    let pending = 0;
+    let approved = 0;
+    let rejected = 0;
+    let withdrawalAmount = 0;
+
+    withdrawalsSnapshot.forEach((withdrawalDoc) => {
+      const withdrawal = withdrawalDoc.data();
+      const status = String(
+        withdrawal.status || ""
+      ).toLowerCase();
+
+      const amount = Number(
+        withdrawal.amount || 0
+      );
+
+      if (status === "pending") {
+        pending++;
+      }
+
+      if (status === "approved") {
+        approved++;
+      }
+
+      if (status === "rejected") {
+        rejected++;
+      }
+
+      withdrawalAmount += amount;
+    });
+
+    document.getElementById("dashUsers").textContent =
+      usersSnapshot.size;
+
+    document.getElementById("dashBalance").textContent =
+      "₹" + totalBalance.toFixed(2);
+
+    document.getElementById("dashReferrals").textContent =
+      totalReferrals;
+
+    document.getElementById("dashPending").textContent =
+      pending;
+
+    document.getElementById("dashApproved").textContent =
+      approved;
+
+    document.getElementById("dashRejected").textContent =
+      rejected;
+
+    document.getElementById("dashWithdrawAmount").textContent =
+      "₹" + withdrawalAmount.toFixed(2);
+
+  } catch (error) {
+    console.error(
+      "Dashboard load failed:",
+      error
+    );
+  }
+}
 /* ================= MAIN ================= */
 
 async function run() {
@@ -328,7 +407,7 @@ async function run() {
     /* LOAD WITHDRAWALS */
 
     await loadWithdrawals();
-
+await loadDashboard();
 
   } catch (error) {
 

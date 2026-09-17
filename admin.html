@@ -97,5 +97,305 @@ from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import {
   getFirestore,
   doc,
-  getDoc,
+  getDoc,  setDoc,
+  collection,
+  getDocs,
+  updateDoc
+}
+from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+import { firebaseConfig } from "./firebase-config.js";
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const statusBox = document.getElementById("status");
+const usersStatus = document.getElementById("usersStatus");
+const usersList = document.getElementById("usersList");
+const searchBox = document.getElementById("userSearch");
+
+const email = prompt("Admin email:");
+const pass = prompt("Admin password:");
+
+let allUsers = [];
+
+async function run() {
+  try {
+
+    await signInWithEmailAndPassword(auth, email, pass);
+
+    const settingsRef = doc(db, "settings", "appSettings");
+    const settingsSnap = await getDoc(settingsRef);
+
+    const settings = settingsSnap.exists()
+      ? settingsSnap.data()
+      : {
+          watchReward: 1,
+          dailyAdLimit: 20,
+          referralReward: 5,
+          minimumWithdraw: 100,
+          minimumReferrals: 5
+        };
+
+    document.getElementById("watchReward").value =
+      settings.watchReward ?? 1;
+
+    document.getElementById("dailyAdLimit").value =
+      settings.dailyAdLimit ?? 20;
+
+    document.getElementById("referralReward").value =
+      settings.referralReward ?? 5;
+
+    document.getElementById("minimumWithdraw").value =
+      settings.minimumWithdraw ?? 100;
+
+    document.getElementById("minimumReferrals").value =
+      settings.minimumReferrals ?? 5;
+
+    document.getElementById("save").onclick = async () => {
+
+      try {
+
+        const data = {
+          watchReward: Number(
+            document.getElementById("watchReward").value
+          ),
+
+          dailyAdLimit: Number(
+            document.getElementById("dailyAdLimit").value
+          ),
+
+          referralReward: Number(
+            document.getElementById("referralReward").value
+          ),
+
+          minimumWithdraw: Number(
+            document.getElementById("minimumWithdraw").value
+          ),
+
+          minimumReferrals: Number(
+            document.getElementById("minimumReferrals").value
+          )
+        };
+
+        await setDoc(
+          doc(db, "settings", "appSettings"),
+          data,
+          { merge: true }
+        );
+
+        statusBox.textContent =
+          "✅ Settings Saved Successfully!";
+
+      } catch (error) {
+
+        statusBox.textContent =
+          "❌ Save failed: " + error.message;
+      }
+    };
+
+    await loadUsers();
+
+  } catch (error) {
+
+    document.body.innerHTML =
+      "<div class='card' style='margin:20px'>" +
+      "<h2>Admin Login Failed</h2>" +
+      "<p>❌ Check your admin email/password.</p>" +
+      "<p>" + error.message + "</p>" +
+      "</div>";
+  }
+}
+
+async function loadUsers() {
+
+  usersStatus.textContent = "⏳ Loading users...";
+  usersList.innerHTML = "";
+
+  try {
+
+    const snapshot =
+      await getDocs(collection(db, "users"));
+
+    allUsers = [];
+
+    snapshot.forEach((userDoc) => {
+      allUsers.push({
+        id: userDoc.id,
+        ...userDoc.data()
+      });
+    });
+
+    usersStatus.textContent =
+      "✅ Total Users: " + allUsers.length;
+
+    displayUsers(allUsers);
+
+  } catch (error) {
+
+    usersStatus.textContent =
+      "❌ Users load failed: " + error.message;
+  }
+}
+
+function displayUsers(users) {
+
+  usersList.innerHTML = "";
+
+  if (users.length === 0) {
+
+    usersList.innerHTML =
+      "<p class='muted'>No users found.</p>";
+
+    return;
+  }
+
+  users.forEach((user) => {
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const username =
+      user.username ||
+      user.name ||
+      user.firstName ||
+      "No username";
+
+    const balance =
+      Number(user.balance || 0);
+
+    const referrals =
+      Number(
+        user.referrals ??
+        user.referralCount ??
+        0
+      );
+
+    const blocked =
+      user.blocked === true;
+
+    card.innerHTML = `
+      <h3>👤 ${escapeHtml(username)}</h3>
+
+      <p>
+        <b>User ID:</b>
+        ${escapeHtml(user.id)}
+      </p>
+
+      <p>
+        <b>Balance:</b>
+        ₹${balance.toFixed(2)}
+      </p>
+
+      <p>
+        <b>Referrals:</b>
+        ${referrals}
+      </p>
+
+      <p>
+        <b>Status:</b>
+        ${blocked ? "🚫 Blocked" : "✅ Active"}
+      </p>
+
+      <button
+        class="primary blockBtn"
+        data-id="${escapeHtml(user.id)}"
+        data-blocked="${blocked}">
+        ${blocked ? "Unblock User" : "Block User"}
+      </button>
+    `;
+
+    usersList.appendChild(card);
+  });
+
+  document
+    .querySelectorAll(".blockBtn")
+    .forEach((button) => {
+
+      button.addEventListener("click", async () => {
+
+        const userId = button.dataset.id;
+        const currentlyBlocked =
+          button.dataset.blocked === "true";
+
+        try {
+
+          await updateDoc(
+            doc(db, "users", userId),
+            {
+              blocked: !currentlyBlocked
+            }
+          );
+
+          usersStatus.textContent =
+            currentlyBlocked
+              ? "✅ User Unblocked"
+              : "🚫 User Blocked";
+
+          await loadUsers();
+
+        } catch (error) {
+
+          usersStatus.textContent =
+            "❌ Action failed: " +
+            error.message;
+        }
+      });
+    });
+}
+
+searchBox.addEventListener("input", () => {
+
+  const search =
+    searchBox.value.trim().toLowerCase();
+
+  if (!search) {
+    displayUsers(allUsers);
+    return;
+  }
+
+  const filtered =
+    allUsers.filter((user) => {
+
+      const id =
+        String(user.id || "").toLowerCase();
+
+      const username =
+        String(
+          user.username ||
+          user.name ||
+          user.firstName ||
+          ""
+        ).toLowerCase();
+
+      return (
+        id.includes(search) ||
+        username.includes(search)
+      );
+    });
+
+  displayUsers(filtered);
+});
+
+document
+  .getElementById("refreshUsers")
+  .addEventListener("click", loadUsers);
+
+function escapeHtml(value) {
+
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+run();
+
+</script>
+
+</body>
+</html>
  

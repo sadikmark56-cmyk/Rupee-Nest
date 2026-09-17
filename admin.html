@@ -19,7 +19,8 @@
 
 <main>
 
-<!-- SETTINGS -->
+<!-- ================= SETTINGS ================= -->
+
 <section class="page active">
 
 <div class="hero">
@@ -45,14 +46,17 @@
 <label>Minimum successful referrals</label>
 <input id="minimumReferrals" type="number">
 
-<button id="save" class="primary">Save Settings</button>
+<button id="save" class="primary">
+  Save Settings
+</button>
 
 <div id="status" class="small"></div>
 
 </div>
 
 
-<!-- USERS -->
+<!-- ================= USERS ================= -->
+
 <div class="hero">
   <span class="pill">USERS</span>
   <h1>Users Management</h1>
@@ -77,6 +81,27 @@
 
 </div>
 
+
+<!-- ================= WITHDRAWALS ================= -->
+
+<div class="hero">
+  <span class="pill">WITHDRAWALS</span>
+  <h1>Withdrawal Management</h1>
+  <p>Review and manage withdrawal requests.</p>
+</div>
+
+<div class="card">
+
+<button id="refreshWithdrawals" class="primary">
+  🔄 Refresh Withdrawals
+</button>
+
+<div id="withdrawalsStatus" class="small"></div>
+
+<div id="withdrawalsList"></div>
+
+</div>
+
 </section>
 
 </main>
@@ -97,46 +122,87 @@ from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import {
   getFirestore,
   doc,
-  getDoc,  setDoc,
+  getDoc,
+  setDoc,
   collection,
   getDocs,
   updateDoc
 }
 from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-import { firebaseConfig } from "./firebase-config.js";
+import { firebaseConfig }
+from "./firebase-config.js";
+
+
+/* FIREBASE */
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const statusBox = document.getElementById("status");
-const usersStatus = document.getElementById("usersStatus");
-const usersList = document.getElementById("usersList");
-const searchBox = document.getElementById("userSearch");
+
+/* ELEMENTS */
+
+const statusBox =
+  document.getElementById("status");
+
+const usersStatus =
+  document.getElementById("usersStatus");
+
+const usersList =
+  document.getElementById("usersList");
+
+const searchBox =
+  document.getElementById("userSearch");
+
+const withdrawalsStatus =
+  document.getElementById("withdrawalsStatus");
+
+const withdrawalsList =
+  document.getElementById("withdrawalsList");
+
+
+/* LOGIN */
 
 const email = prompt("Admin email:");
 const pass = prompt("Admin password:");
 
 let allUsers = [];
 
+
+/* ================= MAIN ================= */
+
 async function run() {
+
   try {
 
-    await signInWithEmailAndPassword(auth, email, pass);
+    await signInWithEmailAndPassword(
+      auth,
+      email,
+      pass
+    );
 
-    const settingsRef = doc(db, "settings", "appSettings");
-    const settingsSnap = await getDoc(settingsRef);
 
-    const settings = settingsSnap.exists()
-      ? settingsSnap.data()
-      : {
-          watchReward: 1,
-          dailyAdLimit: 20,
-          referralReward: 5,
-          minimumWithdraw: 100,
-          minimumReferrals: 5
-        };
+    /* LOAD SETTINGS */
+
+    const settingsRef =
+      doc(db, "settings", "appSettings");
+
+    const settingsSnap =
+      await getDoc(settingsRef);
+
+
+    const settings =
+      settingsSnap.exists()
+        ? settingsSnap.data()
+        : {
+            watchReward: 1,
+            dailyAdLimit: 20,
+            referralReward: 5,
+            minimumWithdraw: 100,
+            minimumReferrals: 5
+          };
+
 
     document.getElementById("watchReward").value =
       settings.watchReward ?? 1;
@@ -153,49 +219,86 @@ async function run() {
     document.getElementById("minimumReferrals").value =
       settings.minimumReferrals ?? 5;
 
-    document.getElementById("save").onclick = async () => {
 
-      try {
+    /* SAVE SETTINGS */
 
-        const data = {
-          watchReward: Number(
-            document.getElementById("watchReward").value
-          ),
+    document.getElementById("save").onclick =
+      async () => {
 
-          dailyAdLimit: Number(
-            document.getElementById("dailyAdLimit").value
-          ),
+        try {
 
-          referralReward: Number(
-            document.getElementById("referralReward").value
-          ),
+          const data = {
 
-          minimumWithdraw: Number(
-            document.getElementById("minimumWithdraw").value
-          ),
+            watchReward:
+              Number(
+                document.getElementById(
+                  "watchReward"
+                ).value
+              ),
 
-          minimumReferrals: Number(
-            document.getElementById("minimumReferrals").value
-          )
-        };
+            dailyAdLimit:
+              Number(
+                document.getElementById(
+                  "dailyAdLimit"
+                ).value
+              ),
 
-        await setDoc(
-          doc(db, "settings", "appSettings"),
-          data,
-          { merge: true }
-        );
+            referralReward:
+              Number(
+                document.getElementById(
+                  "referralReward"
+                ).value
+              ),
 
-        statusBox.textContent =
-          "✅ Settings Saved Successfully!";
+            minimumWithdraw:
+              Number(
+                document.getElementById(
+                  "minimumWithdraw"
+                ).value
+              ),
 
-      } catch (error) {
+            minimumReferrals:
+              Number(
+                document.getElementById(
+                  "minimumReferrals"
+                ).value
+              )
+          };
 
-        statusBox.textContent =
-          "❌ Save failed: " + error.message;
-      }
-    };
+
+          await setDoc(
+            doc(
+              db,
+              "settings",
+              "appSettings"
+            ),
+            data,
+            { merge: true }
+          );
+
+
+          statusBox.textContent =
+            "✅ Settings Saved Successfully!";
+
+        } catch (error) {
+
+          statusBox.textContent =
+            "❌ Save failed: " +
+            error.message;
+        }
+
+      };
+
+
+    /* LOAD USERS */
 
     await loadUsers();
+
+
+    /* LOAD WITHDRAWALS */
+
+    await loadWithdrawals();
+
 
   } catch (error) {
 
@@ -203,45 +306,72 @@ async function run() {
       "<div class='card' style='margin:20px'>" +
       "<h2>Admin Login Failed</h2>" +
       "<p>❌ Check your admin email/password.</p>" +
-      "<p>" + error.message + "</p>" +
+      "<p>" +
+      error.message +
+      "</p>" +
       "</div>";
+
   }
+
 }
+
+
+/* ================= USERS ================= */
 
 async function loadUsers() {
 
-  usersStatus.textContent = "⏳ Loading users...";
+  usersStatus.textContent =
+    "⏳ Loading users...";
+
   usersList.innerHTML = "";
+
 
   try {
 
     const snapshot =
-      await getDocs(collection(db, "users"));
+      await getDocs(
+        collection(db, "users")
+      );
+
 
     allUsers = [];
 
+
     snapshot.forEach((userDoc) => {
+
       allUsers.push({
         id: userDoc.id,
         ...userDoc.data()
       });
+
     });
 
+
     usersStatus.textContent =
-      "✅ Total Users: " + allUsers.length;
+      "✅ Total Users: " +
+      allUsers.length;
+
 
     displayUsers(allUsers);
+
 
   } catch (error) {
 
     usersStatus.textContent =
-      "❌ Users load failed: " + error.message;
+      "❌ Users load failed: " +
+      error.message;
+
   }
+
 }
+
+
+/* DISPLAY USERS */
 
 function displayUsers(users) {
 
   usersList.innerHTML = "";
+
 
   if (users.length === 0) {
 
@@ -249,12 +379,17 @@ function displayUsers(users) {
       "<p class='muted'>No users found.</p>";
 
     return;
+
   }
+
 
   users.forEach((user) => {
 
-    const card = document.createElement("div");
+    const card =
+      document.createElement("div");
+
     card.className = "card";
+
 
     const username =
       user.username ||
@@ -262,8 +397,10 @@ function displayUsers(users) {
       user.firstName ||
       "No username";
 
+
     const balance =
       Number(user.balance || 0);
+
 
     const referrals =
       Number(
@@ -272,11 +409,16 @@ function displayUsers(users) {
         0
       );
 
+
     const blocked =
       user.blocked === true;
 
+
     card.innerHTML = `
-      <h3>👤 ${escapeHtml(username)}</h3>
+
+      <h3>
+        👤 ${escapeHtml(username)}
+      </h3>
 
       <p>
         <b>User ID:</b>
@@ -295,102 +437,604 @@ function displayUsers(users) {
 
       <p>
         <b>Status:</b>
-        ${blocked ? "🚫 Blocked" : "✅ Active"}
+        ${blocked
+          ? "🚫 Blocked"
+          : "✅ Active"}
       </p>
 
       <button
         class="primary blockBtn"
         data-id="${escapeHtml(user.id)}"
         data-blocked="${blocked}">
-        ${blocked ? "Unblock User" : "Block User"}
+        ${
+          blocked
+            ? "Unblock User"
+            : "Block User"
+        }
       </button>
+
     `;
 
+
     usersList.appendChild(card);
+
   });
+
 
   document
     .querySelectorAll(".blockBtn")
     .forEach((button) => {
 
-      button.addEventListener("click", async () => {
+      button.addEventListener(
+        "click",
+        async () => {
 
-        const userId = button.dataset.id;
-        const currentlyBlocked =
-          button.dataset.blocked === "true";
+          const userId =
+            button.dataset.id;
 
-        try {
+          const currentlyBlocked =
+            button.dataset.blocked === "true";
 
-          await updateDoc(
-            doc(db, "users", userId),
-            {
-              blocked: !currentlyBlocked
-            }
-          );
 
-          usersStatus.textContent =
-            currentlyBlocked
-              ? "✅ User Unblocked"
-              : "🚫 User Blocked";
+          try {
 
-          await loadUsers();
+            await updateDoc(
+              doc(
+                db,
+                "users",
+                userId
+              ),
+              {
+                blocked:
+                  !currentlyBlocked
+              }
+            );
 
-        } catch (error) {
 
-          usersStatus.textContent =
-            "❌ Action failed: " +
-            error.message;
+            usersStatus.textContent =
+              currentlyBlocked
+                ? "✅ User Unblocked"
+                : "🚫 User Blocked";
+
+
+            await loadUsers();
+
+
+          } catch (error) {
+
+            usersStatus.textContent =
+              "❌ Action failed: " +
+              error.message;
+
+          }
+
         }
-      });
+      );
+
     });
+
 }
 
-searchBox.addEventListener("input", () => {
 
-  const search =
-    searchBox.value.trim().toLowerCase();
+/* SEARCH USERS */
 
-  if (!search) {
-    displayUsers(allUsers);
-    return;
+searchBox.addEventListener(
+  "input",
+  () => {
+
+    const search =
+      searchBox.value
+        .trim()
+        .toLowerCase();
+
+
+    if (!search) {
+
+      displayUsers(allUsers);
+
+      return;
+    }
+
+
+    const filtered =
+      allUsers.filter((user) => {
+
+        const id =
+          String(
+            user.id || ""
+          ).toLowerCase();
+
+
+        const username =
+          String(
+            user.username ||
+            user.name ||
+            user.firstName ||
+            ""
+          ).toLowerCase();
+
+
+        return (
+          id.includes(search) ||
+          username.includes(search)
+        );
+
+      });
+
+
+    displayUsers(filtered);
+
   }
+);
 
-  const filtered =
-    allUsers.filter((user) => {
 
-      const id =
-        String(user.id || "").toLowerCase();
-
-      const username =
-        String(
-          user.username ||
-          user.name ||
-          user.firstName ||
-          ""
-        ).toLowerCase();
-
-      return (
-        id.includes(search) ||
-        username.includes(search)
-      );
-    });
-
-  displayUsers(filtered);
-});
+/* REFRESH USERS */
 
 document
   .getElementById("refreshUsers")
-  .addEventListener("click", loadUsers);
+  .addEventListener(
+    "click",
+    loadUsers
+  );
+
+
+/* ================= WITHDRAWALS ================= */
+
+async function loadWithdrawals() {
+
+  withdrawalsStatus.textContent =
+    "⏳ Loading withdrawals...";
+
+  withdrawalsList.innerHTML = "";
+
+
+  try {
+
+    const snapshot =
+      await getDocs(
+        collection(
+          db,
+          "withdrawals"
+        )
+      );
+
+
+    const withdrawals = [];
+
+
+    snapshot.forEach(
+      (withdrawalDoc) => {
+
+        withdrawals.push({
+
+          id: withdrawalDoc.id,
+
+          ...withdrawalDoc.data()
+
+        });
+
+      }
+    );
+
+
+    withdrawalsStatus.textContent =
+      "✅ Total Requests: " +
+      withdrawals.length;
+
+
+    displayWithdrawals(
+      withdrawals
+    );
+
+
+  } catch (error) {
+
+    withdrawalsStatus.textContent =
+      "❌ Withdrawals load failed: " +
+      error.message;
+
+    withdrawalsList.innerHTML =
+      "<p class='muted'>" +
+      "Admin withdrawal read permission may be missing." +
+      "</p>";
+
+  }
+
+}
+
+
+/* DISPLAY WITHDRAWALS */
+
+function displayWithdrawals(
+  withdrawals
+) {
+
+  withdrawalsList.innerHTML = "";
+
+
+  if (
+    withdrawals.length === 0
+  ) {
+
+    withdrawalsList.innerHTML =
+      "<p class='muted'>" +
+      "No withdrawal requests found." +
+      "</p>";
+
+    return;
+
+  }
+
+
+  withdrawals.forEach(
+    (withdrawal) => {
+
+      const card =
+        document.createElement(
+          "div"
+        );
+
+      card.className =
+        "card";
+
+
+      const amount =
+        Number(
+          withdrawal.amount ||
+          withdrawal.withdrawAmount ||
+          0
+        );
+
+
+      const method =
+        withdrawal.method ||
+        withdrawal.type ||
+        "Not specified";
+
+
+      const upi =
+        withdrawal.upi ||
+        withdrawal.upiId ||
+        withdrawal.upiID ||
+        "";
+
+
+      const userId =
+        withdrawal.userId ||
+        withdrawal.uid ||
+        "Unknown";
+
+
+      const status =
+        withdrawal.status ||
+        "pending";
+
+
+      const requestDate =
+        formatDate(
+          withdrawal.createdAt ||
+          withdrawal.requestedAt ||
+          withdrawal.date
+        );
+
+
+      const statusText =
+        String(status)
+          .toLowerCase();
+
+
+      let statusDisplay =
+        "⏳ Pending";
+
+
+      if (
+        statusText === "approved"
+      ) {
+
+        statusDisplay =
+          "✅ Approved";
+
+      }
+
+
+      if (
+        statusText === "rejected"
+      ) {
+
+        statusDisplay =
+          "❌ Rejected";
+
+      }
+
+
+      card.innerHTML = `
+
+        <h3>
+          💸 Withdrawal Request
+        </h3>
+
+        <p>
+          <b>Request ID:</b>
+          ${escapeHtml(
+            withdrawal.id
+          )}
+        </p>
+
+        <p>
+          <b>User ID:</b>
+          ${escapeHtml(
+            userId
+          )}
+        </p>
+
+        <p>
+          <b>Amount:</b>
+          ₹${amount.toFixed(2)}
+        </p>
+
+        <p>
+          <b>Method:</b>
+          ${escapeHtml(
+            method
+          )}
+        </p>
+
+        ${
+          upi
+            ? `
+              <p>
+                <b>UPI ID:</b>
+                ${escapeHtml(upi)}
+              </p>
+            `
+            : ""
+        }
+
+        <p>
+          <b>Request Date:</b>
+          ${escapeHtml(requestDate)}
+        </p>
+
+        <p>
+          <b>Status:</b>
+          ${statusDisplay}
+        </p>
+
+        ${
+          statusText === "pending"
+            ? `
+              <button
+                class="primary approveBtn"
+                data-id="${escapeHtml(
+                  withdrawal.id
+                )}">
+                ✅ Approve
+              </button>
+
+              <button
+                class="primary rejectBtn"
+                data-id="${escapeHtml(
+                  withdrawal.id
+                )}">
+                ❌ Reject
+              </button>
+            `
+            : ""
+        }
+
+      `;
+
+
+      withdrawalsList.appendChild(
+        card
+      );
+
+    }
+  );
+
+
+  /* APPROVE */
+
+  document
+    .querySelectorAll(
+      ".approveBtn"
+    )
+    .forEach(
+      (button) => {
+
+        button.addEventListener(
+          "click",
+          async () => {
+
+            await changeWithdrawalStatus(
+              button.dataset.id,
+              "approved"
+            );
+
+          }
+        );
+
+      }
+    );
+
+
+  /* REJECT */
+
+  document
+    .querySelectorAll(
+      ".rejectBtn"
+    )
+    .forEach(
+      (button) => {
+
+        button.addEventListener(
+          "click",
+          async () => {
+
+            await changeWithdrawalStatus(
+              button.dataset.id,
+              "rejected"
+            );
+
+          }
+        );
+
+      }
+    );
+
+}
+
+
+/* CHANGE WITHDRAWAL STATUS */
+
+async function changeWithdrawalStatus(
+  withdrawalId,
+  newStatus
+) {
+
+  const action =
+    newStatus === "approved"
+      ? "approve"
+      : "reject";
+
+
+  const confirmed =
+    confirm(
+      "Are you sure you want to " +
+      action +
+      " this withdrawal?"
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  try {
+
+    await updateDoc(
+      doc(
+        db,
+        "withdrawals",
+        withdrawalId
+      ),
+      {
+        status: newStatus
+      }
+    );
+
+
+    withdrawalsStatus.textContent =
+      newStatus === "approved"
+        ? "✅ Withdrawal Approved"
+        : "❌ Withdrawal Rejected";
+
+
+    await loadWithdrawals();
+
+
+  } catch (error) {
+
+    withdrawalsStatus.textContent =
+      "❌ Action failed: " +
+      error.message;
+
+  }
+
+}
+
+
+/* REFRESH WITHDRAWALS */
+
+document
+  .getElementById(
+    "refreshWithdrawals"
+  )
+  .addEventListener(
+    "click",
+    loadWithdrawals
+  );
+
+
+/* DATE FORMAT */
+
+function formatDate(value) {
+
+  if (!value) {
+    return "Not available";
+  }
+
+
+  try {
+
+    if (
+      typeof value.toDate ===
+      "function"
+    ) {
+
+      return value
+        .toDate()
+        .toLocaleString();
+
+    }
+
+
+    if (
+      typeof value === "object" &&
+      value.seconds
+    ) {
+
+      return new Date(
+        value.seconds * 1000
+      ).toLocaleString();
+
+    }
+
+
+    return new Date(value)
+      .toLocaleString();
+
+
+  } catch {
+
+    return String(value);
+
+  }
+
+}
+
+
+/* SAFE HTML */
 
 function escapeHtml(value) {
 
   return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
+
 }
+
+
+/* START */
 
 run();
 
@@ -398,4 +1042,3 @@ run();
 
 </body>
 </html>
- 

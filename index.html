@@ -1,79 +1,13 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>Rupee Nest</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <div class="app">
-    <header class="topbar">
-      <div>
-        <div class="brand">₹ Rupee Nest</div>
-        <div class="muted" id="welcome">Welcome</div>
-      </div>
-      <div class="balance">₹<span id="balance">0.00</span></div>
-    </header>
-
-    <main>
-      <section id="watch" class="page active">
-        <div class="hero">
-          <span class="pill">WATCH & EARN</span>
-          <h1>Earn by watching ads</h1>
-          <p>Reward and daily limit are controlled from the Admin Panel.</p>
-        </div>
-        <div class="card center">
-          <div class="big">₹<span id="watchReward">1</span></div>
-          <div class="muted">per completed ad</div>
-          <button id="watchBtn" class="primary">Watch Ad</button>
-          <div class="small" id="watchStatus">Loading...</div>
-        </div>
-      </section>
-
-      <section id="referral" class="page">
-        <div class="hero"><span class="pill">REFERRAL</span><h1>Invite friends</h1>
-          <p>Share your referral link and receive the configured reward after a valid referral.</p>
-        </div>
-        <div class="card">
-          <div class="row"><span>Reward</span><b>₹<span id="refReward">5</span></b></div>
-          <input id="refLink" readonly>
-          <button id="copyRef" class="secondary">Copy referral link</button>
-        </div>
-      </section>
-
-      <section id="history" class="page">
-        <div class="hero"><span class="pill">HISTORY</span><h1>Rupee History</h1></div>
-        <div id="historyList" class="list"></div>
-      </section>
-
-      <section id="withdraw" class="page">
-        <div class="hero"><span class="pill">WITHDRAW</span><h1>Withdraw your balance</h1>
-          <p>Minimum balance and referral requirements are controlled by Admin.</p>
-        </div>
-        <div class="card">
-          <div class="row"><span>Balance</span><b>₹<span id="withdrawBalance">0</span></b></div>
-          <div class="row"><span>Minimum</span><b>₹<span id="minWithdraw">100</span></b></div>
-          <div class="row"><span>Required referrals</span><b><span id="minRefs">5</span></b></div>
-          <hr>
-          <label>Amount</label><input id="amount" type="number" min="100" step="1" placeholder="Enter amount">
-          <label>Method</label>
-          <select id="method"><option value="upi">UPI</option><option value="redeemcode">Redeem Code</option></select>
-          <label id="upiLabel">UPI ID</label><input id="upiId" placeholder="example@upi">
-          <button id="withdrawBtn" class="primary">Request Withdrawal</button>
-          <div class="small" id="withdrawStatus"></div>
-        </div>
-      </section>
-    </main>
-
-    <nav class="nav">
-      <button data-page="watch">🏠<span>Watch</span></button>
-      <button data-page="referral">👥<span>Refer</span></button>
-      <button data-page="history">📜<span>History</span></button>
-      <button data-page="withdraw">💸<span>Withdraw</span></button>
-    </nav>
-  </div>
-  <script type="module" src="app.js"></script>
-</body>
-</html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rupee Nest</title><link rel="stylesheet" href="style.css"><script src="https://telegram.org/js/telegram-web-app.js"></script></head>
+<body><div class="app">
+<header class="top"><div><b>₹ Rupee Nest</b><small id="welcome">Welcome</small></div><strong>₹<span id="balance">0.00</span></strong></header>
+<main>
+<section id="watch" class="page active"><div class="card"><small>WATCH & EARN</small><h1>Earn by watching ads</h1><p>Reward: ₹<span id="watchReward">1</span> per ad</p><p>Today: <b id="adsToday">0</b>/<b id="dailyLimit">20</b></p><button id="watchBtn">Watch Ad</button><p id="watchNote" class="muted">Real ad verification will be connected after the ad-network integration is configured.</p></div></section>
+<section id="referral" class="page"><div class="card"><small>REFER & EARN</small><h2>Invite friends</h2><p>₹<span id="refReward">5</span> per successful referral.</p><div id="refLink" class="box">Open inside Telegram to get your link.</div><button id="copyRef">Copy Referral Link</button><p>Successful referrals: <b id="refCount">0</b></p></div></section>
+<section id="history" class="page"><div class="card"><small>HISTORY</small><h2>Rupee History</h2><div id="historyList" class="list">Loading...</div></div></section>
+<section id="withdraw" class="page"><div class="card"><small>WITHDRAW</small><h2>Withdraw balance</h2><p>Minimum ₹<span id="minWithdraw">100</span> + <span id="minReferrals">5</span> successful referrals.</p><label>Amount</label><input id="withdrawAmount" type="number" placeholder="Amount"><label>Method</label><select id="withdrawMethod"><option value="upi">UPI</option><option value="redeemcode">Redeem Code</option></select><label id="upiLabel">UPI ID</label><input id="upiId" placeholder="example@upi"><label id="redeemLabel" class="hide">Redeem Code</label><input id="redeemCode" class="hide" placeholder="Code"><button id="withdrawBtn">Submit Withdrawal</button><p id="withdrawStatus" class="muted"></p></div></section>
+<section id="admin" class="page"><div class="card"><small>ADMIN PANEL</small><h2>Rupee Nest Admin</h2><div id="adminArea">Checking admin access...</div></div></section>
+</main>
+<nav><button data-page="watch" class="active">🏠<small>Watch</small></button><button data-page="referral">👥<small>Refer</small></button><button data-page="history">📜<small>History</small></button><button data-page="withdraw">💸<small>Withdraw</small></button><button data-page="admin" id="adminNav" class="hide">⚙️<small>Admin</small></button></nav>
+</div><script type="module" src="app.js"></script></body></html>

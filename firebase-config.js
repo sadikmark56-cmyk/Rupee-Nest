@@ -1,0 +1,12 @@
+// Firebase Web App configuration.
+// This is client-side configuration; do NOT put your Firebase Admin SDK
+// private key or Telegram bot token in this file.
+export const firebaseConfig = {
+  apiKey: "AIzaSyCXaHX4aoj7WmhzKJaihEAHEiUgV0kxems",
+  authDomain: "rupee-7277e.firebaseapp.com",
+  databaseURL: "https://rupee-7277e-default-rtdb.firebaseio.com",
+  projectId: "rupee-7277e",
+  storageBucket: "rupee-7277e.firebasestorage.app",
+  messagingSenderId: "620238064152",
+  appId: "1:620238064152:web:3362f1a1805c9eabf9516d"
+};
